@@ -33,17 +33,26 @@ app.secret_key = 'T0pS3cr3t_K3y_For_My_W3bs!t3'
 
 
 
+# Configure session settings for better persistence
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True for HTTPS in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
 # Initialize the app with extensions
 db.init_app(app)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access the dashboard.'
 login_manager.login_message_category = 'info'
+login_manager.session_protection = "strong"
 
 with app.app_context():
     # Import models and routes
     import models  # noqa: F401
     import routes  # noqa: F401
+    import routes_admin  # noqa: F401
+    import routes_payment  # noqa: F401
     
     # Create all database tables
     db.create_all()

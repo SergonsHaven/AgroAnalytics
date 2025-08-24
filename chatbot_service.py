@@ -10,14 +10,19 @@ class ChatbotService:
     def __init__(self):
         # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
         # do not change this unless explicitly requested by the user
-        self.openai_client = OpenAI(
-            api_key=os.environ.get("OPENAI_API_KEY", "default_openai_key")
-        )
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key or api_key == "default_openai_key":
+            logging.error("No valid OpenAI API key found")
+            self.openai_client = None
+        else:
+            self.openai_client = OpenAI(api_key=api_key)
         self.model = "gpt-4o"
         
     def get_response(self, message, user):
         """Get AI chatbot response for farmer queries"""
         try:
+            if not self.openai_client:
+                return "I'm sorry, but the AI chatbot service is temporarily unavailable. Please try again later or contact support."
             # Prepare context about the user and their farm
             user_context = self._prepare_user_context(user)
             

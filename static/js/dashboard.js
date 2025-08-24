@@ -498,8 +498,176 @@ document.addEventListener('DOMContentLoaded', function() {
     window.dashboard = dashboard;
     
     // Global functions for backward compatibility
-    window.updateData = () => dashboard.updateDashboardData();
+    window.updateData = function() {
+        // Show loading state
+        const updateBtn = event.target;
+        const originalText = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+        updateBtn.disabled = true;
+        
+        fetch('/api/update-data')
+            .then(response => response.json())
+            .then(data => {
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+                
+                if (data.success) {
+                    dashboard.showAlert('success', `${data.message} at ${new Date(data.timestamp).toLocaleString()}`);
+                    
+                    if (data.latest_data && data.latest_data.length > 0) {
+                        showLatestDataModal(data.latest_data);
+                    }
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    alert('Failed to update data: ' + data.message);
+                }
+            })
+            .catch(error => {
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+                alert('Error updating data: ' + error.message);
+            });
+    };
+    
+    window.viewExtractedData = function() {
+        fetch('/api/data/view')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showDataViewerModal(data.data, data.pagination);
+                } else {
+                    alert('Failed to load data: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error loading data: ' + error.message);
+            });
+    };
+    
     window.exportData = () => dashboard.exportDashboardData();
+    
+    // Helper functions for modals
+    function showLatestDataModal(latestData) {
+        let modal = document.getElementById('latestDataModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'latestDataModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Latest Data Fetched</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Crop</th>
+                                            <th>County</th>
+                                            <th>Value</th>
+                                            <th>Unit</th>
+                                            <th>Year</th>
+                                            <th>Source</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="latest-data-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const tbody = document.getElementById('latest-data-tbody');
+        tbody.innerHTML = latestData.map(item => `
+            <tr>
+                <td>${item.crop || 'N/A'}</td>
+                <td>${item.county || 'N/A'}</td>
+                <td>${item.value || 'N/A'}</td>
+                <td>${item.unit || 'N/A'}</td>
+                <td>${item.year || 'N/A'}</td>
+                <td><span class="badge bg-primary">${item.source}</span></td>
+            </tr>
+        `).join('');
+        
+        const modalElement = document.getElementById('latestDataModal');
+        const bsModal = new bootstrap.Modal(modalElement);
+        bsModal.show();
+    }
+    
+    function showDataViewerModal(data, pagination) {
+        let modal = document.getElementById('dataViewerModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'dataViewerModal';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Agricultural Data Viewer</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="data-viewer-content"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const content = document.getElementById('data-viewer-content');
+        content.innerHTML = `
+            <div class="mb-3">
+                <strong>Total Records:</strong> ${pagination.total} | 
+                <strong>Page:</strong> ${pagination.page} of ${pagination.pages}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Source</th>
+                            <th>Crop</th>
+                            <th>County</th>
+                            <th>Value</th>
+                            <th>Unit</th>
+                            <th>Year</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(item => `
+                            <tr>
+                                <td>${item.id}</td>
+                                <td><span class="badge bg-primary">${item.source}</span></td>
+                                <td>${item.crop || 'N/A'}</td>
+                                <td>${item.county || 'N/A'}</td>
+                                <td>${item.value || 'N/A'}</td>
+                                <td>${item.unit || 'N/A'}</td>
+                                <td>${item.year || 'N/A'}</td>
+                                <td>${new Date(item.created_at).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        const modalElement = document.getElementById('dataViewerModal');
+        const bsModal = new bootstrap.Modal(modalElement);
+        bsModal.show();
+    }
 });
 
 // Clean up when page unloads
