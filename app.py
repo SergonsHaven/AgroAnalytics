@@ -28,6 +28,10 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.secret_key = 'T0pS3cr3t_K3y_For_My_W3bs!t3'
+
+
 
 # Initialize the app with extensions
 db.init_app(app)
