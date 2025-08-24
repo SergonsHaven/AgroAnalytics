@@ -130,7 +130,7 @@ def login():
         ).first()
         
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user, remember=True)  # Remember login for persistent sessions
             flash(f'Welcome back, {user.full_name}!', 'success')
             return redirect(url_for('dashboard'))
         else:
@@ -263,9 +263,25 @@ def update_data_api():
         update_result = data_service.fetch_latest_data()
         
         if update_result['success']:
+            # Get updated data for display
+            latest_data = AgriculturalData.query.order_by(
+                AgriculturalData.created_at.desc()
+            ).limit(10).all()
+            
             return jsonify({
                 'success': True,
-                'message': f"Updated {update_result['records_updated']} records"
+                'message': f"Updated {update_result['records_updated']} records",
+                'timestamp': update_result['timestamp'].isoformat(),
+                'latest_data': [
+                    {
+                        'crop': data.crop_name,
+                        'county': data.county,
+                        'value': data.value,
+                        'unit': data.unit,
+                        'year': data.year,
+                        'source': data.data_source
+                    } for data in latest_data
+                ]
             })
         else:
             return jsonify({
@@ -279,6 +295,42 @@ def update_data_api():
             'success': False,
             'message': 'Internal server error'
         }), 500
+
+@app.route('/api/data/view')
+@login_required
+def view_data_api():
+    """API endpoint to view latest agricultural data"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        data_records = AgriculturalData.query.order_by(
+            AgriculturalData.created_at.desc()
+        ).paginate(page=page, per_page=20, error_out=False)
+        
+        return jsonify({
+            'success': True,
+            'data': [
+                {
+                    'id': data.id,
+                    'crop': data.crop_name,
+                    'county': data.county,
+                    'value': data.value,
+                    'unit': data.unit,
+                    'year': data.year,
+                    'source': data.data_source,
+                    'created_at': data.created_at.isoformat()
+                } for data in data_records.items
+            ],
+            'pagination': {
+                'page': data_records.page,
+                'pages': data_records.pages,
+                'total': data_records.total,
+                'has_next': data_records.has_next,
+                'has_prev': data_records.has_prev
+            }
+        })
+    except Exception as e:
+        logging.error(f"View data API error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Failed to load data'}), 500
 
 @app.errorhandler(404)
 def not_found_error(error):

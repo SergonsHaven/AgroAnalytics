@@ -21,6 +21,9 @@ class User(UserMixin, db.Model):
     farm_type = db.Column(db.String(50))  # e.g., 'Smallholder', 'Commercial'
     primary_crops = db.Column(db.Text)  # JSON string of crops grown
     farming_experience = db.Column(db.Integer)  # Years of experience
+    is_admin = db.Column(db.Boolean, default=False)  # Admin flag
+    subscription_status = db.Column(db.String(20), default='none')  # none, active, cancelled
+    subscription_plan = db.Column(db.String(20), default='none')  # none, basic, premium, enterprise
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
