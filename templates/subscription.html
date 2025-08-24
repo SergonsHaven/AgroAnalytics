@@ -40,9 +40,15 @@
                 <div class="card-body text-center p-4">
                     <h3 class="card-title h4 mb-3">{{ plan.name }}</h3>
                     <div class="mb-4">
-                        <span class="h2 text-agricultural-green">KES {{ "{:,}".format(plan.price) }}</span>
-                        <span class="text-muted">/month</span>
-                    </div>
+    <div class="mb-4">
+       {% if plan.price == 0 %}
+           <span class="h2 text-agricultural-green">Free</span>
+       {% else %}
+           <span class="h2 text-agricultural-green">KES {{ "{:,}".format(plan.price) }}</span>
+       {% endif %}
+           <span class="text-muted">/month</span>
+    </div>                        
+    </div>
                     
                     <ul class="list-unstyled mb-4">
                         {% for feature in plan.features %}
@@ -54,15 +60,15 @@
                 </div>
                 
                 <div class="card-footer bg-transparent border-0 p-4">
-                    {% if current_user.subscription_plan == plan_key and current_user.subscription_status == 'active' %}
-                        <button class="btn btn-outline-success w-100" disabled>
-                            <i class="fas fa-check me-2"></i>Current Plan
-                        </button>
+                    {% if plan_key == 'basic' %}
+                    <button class="btn btn-agricultural-green w-100" onclick="subscribeToPlan('{{ plan_key }}')">
+                        <i class="fas fa-play-circle me-2"></i>Get Started
+                    </button>
                     {% else %}
-                        <button class="btn {% if plan_key == 'premium' %}btn-agricultural-green{% else %}btn-outline-agricultural-green{% endif %} w-100" 
-                                onclick="subscribeToPlan('{{ plan_key }}')">
-                            <i class="fas fa-credit-card me-2"></i>Subscribe Now
-                        </button>
+                    <button class="btn {% if plan_key == 'premium' %}btn-agricultural-green{% else %}btn-outline-agricultural-green{% endif %} w-100" 
+                        onclick="subscribeToPlan('{{ plan_key }}')">
+                       <i class="fas fa-credit-card me-2"></i>Subscribe Now
+                    </button>
                     {% endif %}
                 </div>
             </div>

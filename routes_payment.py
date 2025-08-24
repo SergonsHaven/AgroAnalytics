@@ -19,7 +19,7 @@ def subscription():
     plans = {
         'basic': {
             'name': 'Basic Plan',
-            'price': 1000,  # KES 1000 per month
+            'price': 0,  # Free plan per month
             'features': [
                 'Access to basic agricultural data',
                 'AI chatbot assistance',
